@@ -1,13 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React, { useState, useEffect } from 'react';
+import IntroAnimation from '@/components/IntroAnimation';
+import Navbar from '@/components/Navbar';
+import HeroSection from '@/components/HeroSection';
+import AboutSection from '@/components/AboutSection';
+import SkillsSection from '@/components/SkillsSection';
+import ServicesSection from '@/components/ServicesSection';
+import ContactSection from '@/components/ContactSection';
+import Footer from '@/components/Footer';
 
-const Index = () => {
+const Index: React.FC = () => {
+  const [showIntro, setShowIntro] = useState(() => {
+    // Only show intro on first visit per session
+    return !sessionStorage.getItem('introShown');
+  });
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+    sessionStorage.setItem('introShown', 'true');
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <>
+      {showIntro && <IntroAnimation onComplete={handleIntroComplete} />}
+      
+      <div className={`min-h-screen transition-opacity duration-500 ${showIntro ? 'opacity-0' : 'opacity-100'}`}>
+        <Navbar />
+        <main>
+          <HeroSection />
+          <AboutSection />
+          <SkillsSection />
+          <ServicesSection />
+          <ContactSection />
+        </main>
+        <Footer />
       </div>
-    </div>
+    </>
   );
 };
 
