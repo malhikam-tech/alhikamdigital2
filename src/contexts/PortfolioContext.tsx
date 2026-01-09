@@ -1,5 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  category: string;
+  technologies: string[];
+  liveUrl?: string;
+  githubUrl?: string;
+}
+
 interface PortfolioData {
   name: string;
   tagline: string;
@@ -25,6 +36,7 @@ interface PortfolioData {
     priceMax: number;
     features: string[];
   }[];
+  projects: Project[];
   whatsappNumber: string;
 }
 
@@ -106,6 +118,63 @@ const defaultData: PortfolioData = {
         'Support 24/7',
         'Waktu Pengerjaan 14-30 Hari',
       ],
+    },
+  ],
+  projects: [
+    {
+      id: 'portfolio-website',
+      title: 'Portfolio Website',
+      description: 'Website portfolio pribadi dengan desain modern, dark theme, dan efek glassmorphism. Dibuat menggunakan React dan Tailwind CSS.',
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
+      category: 'Web Development',
+      technologies: ['React', 'Tailwind CSS', 'TypeScript', 'Framer Motion'],
+      liveUrl: 'https://example.com',
+      githubUrl: 'https://github.com',
+    },
+    {
+      id: 'e-commerce-store',
+      title: 'E-Commerce Store',
+      description: 'Platform toko online dengan fitur keranjang belanja, pembayaran, dan dashboard admin untuk mengelola produk.',
+      image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
+      category: 'Web Development',
+      technologies: ['React', 'Node.js', 'MongoDB', 'Stripe'],
+      liveUrl: 'https://example.com',
+    },
+    {
+      id: 'network-scanner',
+      title: 'Network Security Scanner',
+      description: 'Tool untuk scanning jaringan dan mendeteksi vulnerability pada sistem. Membantu identifikasi kelemahan keamanan.',
+      image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80',
+      category: 'Cyber Security',
+      technologies: ['Python', 'Nmap', 'Linux', 'Bash'],
+      githubUrl: 'https://github.com',
+    },
+    {
+      id: 'school-website',
+      title: 'Website Sekolah',
+      description: 'Website informatif untuk sekolah dengan fitur berita, galeri foto, dan sistem informasi siswa.',
+      image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800&q=80',
+      category: 'Web Development',
+      technologies: ['HTML', 'CSS', 'JavaScript', 'PHP'],
+      liveUrl: 'https://example.com',
+    },
+    {
+      id: 'password-manager',
+      title: 'Secure Password Manager',
+      description: 'Aplikasi untuk menyimpan password dengan enkripsi AES-256. Aman dan mudah digunakan.',
+      image: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=800&q=80',
+      category: 'Cyber Security',
+      technologies: ['Python', 'Cryptography', 'SQLite'],
+      githubUrl: 'https://github.com',
+    },
+    {
+      id: 'landing-page-client',
+      title: 'Landing Page Bisnis',
+      description: 'Landing page modern untuk client bisnis dengan desain yang menarik dan responsif.',
+      image: 'https://images.unsplash.com/photo-1522542550221-31fd8575f488?w=800&q=80',
+      category: 'Web Development',
+      technologies: ['React', 'Tailwind CSS', 'Vite'],
+      liveUrl: 'https://example.com',
     },
   ],
   whatsappNumber: "+6282122662713",

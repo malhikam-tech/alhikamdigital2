@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import IntroAnimation from '@/components/IntroAnimation';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import AboutSection from '@/components/AboutSection';
 import SkillsSection from '@/components/SkillsSection';
+import ProjectsSection from '@/components/ProjectsSection';
 import ServicesSection from '@/components/ServicesSection';
 import ContactSection from '@/components/ContactSection';
 import Footer from '@/components/Footer';
 
 const Index: React.FC = () => {
   const [showIntro, setShowIntro] = useState(() => {
-    // Only show intro on first visit per session
     return !sessionStorage.getItem('introShown');
   });
 
@@ -29,6 +29,7 @@ const Index: React.FC = () => {
           <HeroSection />
           <AboutSection />
           <SkillsSection />
+          <ProjectsSection />
           <ServicesSection />
           <ContactSection />
         </main>
