@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Shield, User } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { data, isAdmin } = usePortfolio();
+  const { data } = usePortfolio();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -21,6 +23,7 @@ const Navbar: React.FC = () => {
     { name: 'Home', href: '#home' },
     { name: 'About', href: '#about' },
     { name: 'Skills', href: '#skills' },
+    { name: 'Projects', href: '#projects' },
     { name: 'Services', href: '#services' },
     { name: 'Contact', href: '#contact' },
   ];
@@ -75,13 +78,21 @@ const Navbar: React.FC = () => {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
               </button>
             ))}
-            {isAdmin && (
+            {user ? (
               <Link
                 to="/admin"
                 className="flex items-center gap-1 text-xs font-medium text-accent hover:text-accent/80 transition-colors"
               >
                 <User className="w-3 h-3" />
-                Admin
+                {isAdmin ? 'Admin' : 'Dashboard'}
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                <User className="w-3 h-3" />
+                Login
               </Link>
             )}
           </div>
@@ -112,14 +123,23 @@ const Navbar: React.FC = () => {
               {link.name}
             </button>
           ))}
-          {isAdmin && (
+          {user ? (
             <Link
               to="/admin"
               className="flex items-center gap-2 text-sm text-accent hover:text-accent/80 transition-colors py-2"
               onClick={() => setIsOpen(false)}
             >
               <User className="w-4 h-4" />
-              Admin Panel
+              {isAdmin ? 'Admin Panel' : 'Dashboard'}
+            </Link>
+          ) : (
+            <Link
+              to="/auth"
+              className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors py-2"
+              onClick={() => setIsOpen(false)}
+            >
+              <User className="w-4 h-4" />
+              Login
             </Link>
           )}
         </div>
