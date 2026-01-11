@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Shield, User } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { data, isAdmin } = usePortfolio();
+  const { data } = usePortfolio();
+  const { isAdmin } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
