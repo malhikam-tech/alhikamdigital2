@@ -26,7 +26,7 @@ const Footer: React.FC = () => {
 
           {/* Copyright */}
           <p className="text-xs text-muted-foreground flex items-center gap-1">
-            © 2026 Al Hikam Digital. Made with <Heart className="w-3 h-3 text-destructive" /> in Indonesia
+            © {currentYear} {data.name}. Made with <Heart className="w-3 h-3 text-destructive" /> in Indonesia
           </p>
 
           {/* Quick Links */}
