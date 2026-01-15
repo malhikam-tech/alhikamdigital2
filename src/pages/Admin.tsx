@@ -1,98 +1,32 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { usePortfolioData } from '@/hooks/usePortfolioData';
+import { usePortfolio } from '@/contexts/PortfolioContext';
 import { useToast } from '@/hooks/use-toast';
 import { 
   LogOut, Save, User, Image, Code, Shield, 
-  Link as LinkIcon, Package, MessageCircle, Upload, X, Loader2 
+  Link as LinkIcon, Package, MessageCircle, Upload, X 
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
-  const { isAdmin, isLoading: authLoading, logout } = useAuth();
-  const { 
-    portfolio, 
-    skills, 
-    packages, 
-    isLoading: dataLoading,
-    updatePortfolio,
-    updateSkill,
-    updatePackage,
-    refetch
-  } = usePortfolioData();
+  const { data, updateData, isAdmin, logout } = usePortfolio();
   const navigate = useNavigate();
   const { toast } = useToast();
   const profileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   
   const [activeTab, setActiveTab] = useState('profile');
-  const [formData, setFormData] = useState<{
-    name: string;
-    tagline: string;
-    age: number;
-    grade: string;
-    bio: string;
-    profile_image: string;
-    logo_image: string;
-    whatsapp: string;
-    email: string;
-    github: string;
-    instagram: string;
-  }>({
-    name: '',
-    tagline: '',
-    age: 13,
-    grade: '',
-    bio: '',
-    profile_image: '',
-    logo_image: '',
-    whatsapp: '',
-    email: '',
-    github: '',
-    instagram: '',
-  });
-
-  const [skillsData, setSkillsData] = useState<typeof skills>([]);
-  const [packagesData, setPackagesData] = useState<typeof packages>([]);
-  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState(data);
 
   // Redirect if not admin
-  useEffect(() => {
-    if (!authLoading && !isAdmin) {
+  React.useEffect(() => {
+    if (!isAdmin) {
       navigate('/login');
     }
-  }, [isAdmin, authLoading, navigate]);
-
-  // Initialize form data when portfolio loads
-  useEffect(() => {
-    if (portfolio) {
-      setFormData({
-        name: portfolio.name || '',
-        tagline: portfolio.tagline || '',
-        age: portfolio.age || 13,
-        grade: portfolio.grade || '',
-        bio: portfolio.bio || '',
-        profile_image: portfolio.profile_image || '',
-        logo_image: portfolio.logo_image || '',
-        whatsapp: portfolio.whatsapp || '',
-        email: portfolio.email || '',
-        github: portfolio.github || '',
-        instagram: portfolio.instagram || '',
-      });
-    }
-  }, [portfolio]);
-
-  useEffect(() => {
-    setSkillsData(skills);
-  }, [skills]);
-
-  useEffect(() => {
-    setPackagesData(packages);
-  }, [packages]);
+  }, [isAdmin, navigate]);
 
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>, 
-    type: 'profile_image' | 'logo_image'
+    type: 'profileImage' | 'logoImage'
   ) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -107,66 +41,29 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-
-    try {
-      // Save portfolio data
-      const { error: portfolioError } = await updatePortfolio(formData);
-      if (portfolioError) throw new Error(portfolioError);
-
-      // Save skills
-      for (const skill of skillsData) {
-        const { error } = await updateSkill(skill.id, {
-          name: skill.name,
-          percentage: skill.percentage,
-        });
-        if (error) throw new Error(error);
-      }
-
-      // Save packages
-      for (const pkg of packagesData) {
-        const { error } = await updatePackage(pkg.id, {
-          name: pkg.name,
-          price_min: pkg.price_min,
-          price_max: pkg.price_max,
-          features: pkg.features,
-        });
-        if (error) throw new Error(error);
-      }
-
-      toast({
-        title: "Berhasil disimpan!",
-        description: "Perubahan telah diterapkan ke database",
-      });
-
-      refetch();
-    } catch (err: any) {
-      toast({
-        title: "Gagal menyimpan",
-        description: err.message || "Terjadi kesalahan",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSave = () => {
+    updateData(formData);
+    toast({
+      title: "Berhasil disimpan!",
+      description: "Perubahan telah diterapkan",
+    });
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
     navigate('/');
   };
 
-  const handleUpdateSkill = (index: number, field: 'name' | 'percentage', value: string | number) => {
-    const newSkills = [...skillsData];
+  const updateSkill = (index: number, field: 'name' | 'percentage', value: string | number) => {
+    const newSkills = [...formData.skills];
     newSkills[index] = { ...newSkills[index], [field]: value };
-    setSkillsData(newSkills);
+    setFormData(prev => ({ ...prev, skills: newSkills }));
   };
 
-  const handleUpdatePackage = (index: number, field: string, value: string | number | string[]) => {
-    const newPackages = [...packagesData];
+  const updatePackage = (index: number, field: string, value: string | number | string[]) => {
+    const newPackages = [...formData.packages];
     newPackages[index] = { ...newPackages[index], [field]: value };
-    setPackagesData(newPackages);
+    setFormData(prev => ({ ...prev, packages: newPackages }));
   };
 
   const tabs = [
@@ -176,14 +73,6 @@ const Admin: React.FC = () => {
     { id: 'packages', label: 'Packages', icon: Package },
     { id: 'social', label: 'Social', icon: LinkIcon },
   ];
-
-  if (authLoading || dataLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   if (!isAdmin) return null;
 
@@ -199,14 +88,9 @@ const Admin: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
             >
-              {isSaving ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Save className="w-3 h-3" />
-              )}
+              <Save className="w-3 h-3" />
               Save
             </button>
             <button
@@ -310,8 +194,8 @@ const Admin: React.FC = () => {
                   <label className="block text-xs font-medium text-muted-foreground mb-2">Foto Profile</label>
                   <div className="flex items-center gap-4">
                     <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted">
-                      {formData.profile_image ? (
-                        <img src={formData.profile_image} alt="Profile" className="w-full h-full object-cover" />
+                      {formData.profileImage ? (
+                        <img src={formData.profileImage} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                           <User className="w-8 h-8" />
@@ -323,7 +207,7 @@ const Admin: React.FC = () => {
                         ref={profileInputRef}
                         type="file"
                         accept="image/*"
-                        onChange={(e) => handleImageUpload(e, 'profile_image')}
+                        onChange={(e) => handleImageUpload(e, 'profileImage')}
                         className="hidden"
                       />
                       <button
@@ -333,9 +217,9 @@ const Admin: React.FC = () => {
                         <Upload className="w-3 h-3" />
                         Upload
                       </button>
-                      {formData.profile_image && (
+                      {formData.profileImage && (
                         <button
-                          onClick={() => setFormData(prev => ({ ...prev, profile_image: '' }))}
+                          onClick={() => setFormData(prev => ({ ...prev, profileImage: '' }))}
                           className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg text-xs"
                         >
                           <X className="w-3 h-3" />
@@ -351,8 +235,8 @@ const Admin: React.FC = () => {
                   <label className="block text-xs font-medium text-muted-foreground mb-2">Logo</label>
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
-                      {formData.logo_image ? (
-                        <img src={formData.logo_image} alt="Logo" className="w-full h-full object-contain p-2" />
+                      {formData.logoImage ? (
+                        <img src={formData.logoImage} alt="Logo" className="w-full h-full object-contain p-2" />
                       ) : (
                         <Shield className="w-6 h-6 text-muted-foreground" />
                       )}
@@ -362,7 +246,7 @@ const Admin: React.FC = () => {
                         ref={logoInputRef}
                         type="file"
                         accept="image/*"
-                        onChange={(e) => handleImageUpload(e, 'logo_image')}
+                        onChange={(e) => handleImageUpload(e, 'logoImage')}
                         className="hidden"
                       />
                       <button
@@ -372,9 +256,9 @@ const Admin: React.FC = () => {
                         <Upload className="w-3 h-3" />
                         Upload
                       </button>
-                      {formData.logo_image && (
+                      {formData.logoImage && (
                         <button
-                          onClick={() => setFormData(prev => ({ ...prev, logo_image: '' }))}
+                          onClick={() => setFormData(prev => ({ ...prev, logoImage: '' }))}
                           className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg text-xs"
                         >
                           <X className="w-3 h-3" />
@@ -393,12 +277,12 @@ const Admin: React.FC = () => {
                 <h2 className="text-lg font-heading font-semibold text-foreground">Skills</h2>
                 
                 <div className="space-y-3">
-                  {skillsData.map((skill, index) => (
-                    <div key={skill.id} className="grid grid-cols-[1fr_80px] gap-2 items-center">
+                  {formData.skills.map((skill, index) => (
+                    <div key={index} className="grid grid-cols-[1fr_80px_80px] gap-2 items-center">
                       <input
                         type="text"
                         value={skill.name}
-                        onChange={(e) => handleUpdateSkill(index, 'name', e.target.value)}
+                        onChange={(e) => updateSkill(index, 'name', e.target.value)}
                         className="px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                       />
                       <input
@@ -406,9 +290,16 @@ const Admin: React.FC = () => {
                         min="0"
                         max="100"
                         value={skill.percentage}
-                        onChange={(e) => handleUpdateSkill(index, 'percentage', parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateSkill(index, 'percentage', parseInt(e.target.value) || 0)}
                         className="px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                       />
+                      <span className={`text-xs px-2 py-1 rounded-full text-center ${
+                        skill.category === 'webdev' 
+                          ? 'bg-primary/10 text-primary' 
+                          : 'bg-accent/10 text-accent'
+                      }`}>
+                        {skill.category}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -420,7 +311,7 @@ const Admin: React.FC = () => {
               <div className="space-y-6">
                 <h2 className="text-lg font-heading font-semibold text-foreground">Packages</h2>
                 
-                {packagesData.map((pkg, index) => (
+                {formData.packages.map((pkg, index) => (
                   <div key={pkg.id} className="p-4 border border-border rounded-lg space-y-3">
                     <h3 className="text-sm font-semibold text-foreground">{pkg.name}</h3>
                     <div className="grid sm:grid-cols-2 gap-3">
@@ -428,8 +319,8 @@ const Admin: React.FC = () => {
                         <label className="block text-xs text-muted-foreground mb-1">Harga Min (Rp)</label>
                         <input
                           type="number"
-                          value={pkg.price_min}
-                          onChange={(e) => handleUpdatePackage(index, 'price_min', parseInt(e.target.value) || 0)}
+                          value={pkg.priceMin}
+                          onChange={(e) => updatePackage(index, 'priceMin', parseInt(e.target.value) || 0)}
                           className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                         />
                       </div>
@@ -437,8 +328,8 @@ const Admin: React.FC = () => {
                         <label className="block text-xs text-muted-foreground mb-1">Harga Max (Rp)</label>
                         <input
                           type="number"
-                          value={pkg.price_max}
-                          onChange={(e) => handleUpdatePackage(index, 'price_max', parseInt(e.target.value) || 0)}
+                          value={pkg.priceMax}
+                          onChange={(e) => updatePackage(index, 'priceMax', parseInt(e.target.value) || 0)}
                           className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                         />
                       </div>
@@ -447,7 +338,7 @@ const Admin: React.FC = () => {
                       <label className="block text-xs text-muted-foreground mb-1">Features (pisahkan dengan enter)</label>
                       <textarea
                         value={pkg.features.join('\n')}
-                        onChange={(e) => handleUpdatePackage(index, 'features', e.target.value.split('\n'))}
+                        onChange={(e) => updatePackage(index, 'features', e.target.value.split('\n'))}
                         rows={4}
                         className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary resize-none"
                       />
@@ -462,8 +353,8 @@ const Admin: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    value={formData.whatsapp}
-                    onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                    value={formData.whatsappNumber}
+                    onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
                     className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                     placeholder="+62 xxx xxxx xxxx"
                   />
@@ -480,8 +371,11 @@ const Admin: React.FC = () => {
                   <label className="block text-xs font-medium text-muted-foreground mb-1">GitHub URL</label>
                   <input
                     type="url"
-                    value={formData.github}
-                    onChange={(e) => setFormData(prev => ({ ...prev, github: e.target.value }))}
+                    value={formData.socialLinks.github || ''}
+                    onChange={(e) => setFormData(prev => ({ 
+                      ...prev, 
+                      socialLinks: { ...prev.socialLinks, github: e.target.value } 
+                    }))}
                     className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                     placeholder="https://github.com/username"
                   />
@@ -490,8 +384,11 @@ const Admin: React.FC = () => {
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Instagram URL</label>
                   <input
                     type="url"
-                    value={formData.instagram}
-                    onChange={(e) => setFormData(prev => ({ ...prev, instagram: e.target.value }))}
+                    value={formData.socialLinks.instagram || ''}
+                    onChange={(e) => setFormData(prev => ({ 
+                      ...prev, 
+                      socialLinks: { ...prev.socialLinks, instagram: e.target.value } 
+                    }))}
                     className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                     placeholder="https://instagram.com/username"
                   />
@@ -500,8 +397,11 @@ const Admin: React.FC = () => {
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Email</label>
                   <input
                     type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    value={formData.socialLinks.email || ''}
+                    onChange={(e) => setFormData(prev => ({ 
+                      ...prev, 
+                      socialLinks: { ...prev.socialLinks, email: e.target.value } 
+                    }))}
                     className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                     placeholder="email@example.com"
                   />

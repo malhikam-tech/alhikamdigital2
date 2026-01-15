@@ -1,53 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { usePortfolio } from '@/contexts/PortfolioContext';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Lock, Mail, ArrowLeft } from 'lucide-react';
+import { Shield, Lock, User, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAdmin, isLoading: authLoading } = useAuth();
+  const { login, isAdmin } = usePortfolio();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!authLoading && isAdmin) {
+    if (isAdmin) {
       navigate('/admin');
     }
-  }, [isAdmin, authLoading, navigate]);
+  }, [isAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await login(email, password);
+    // Simulate loading
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const success = login(username, password);
     
-    if (error) {
-      toast({
-        title: "Login gagal",
-        description: error,
-        variant: "destructive",
-      });
-    } else {
+    if (success) {
       toast({
         title: "Login berhasil!",
         description: "Selamat datang di Admin Panel",
+      });
+      navigate('/admin');
+    } else {
+      toast({
+        title: "Login gagal",
+        description: "Username atau password salah",
+        variant: "destructive",
       });
     }
     
     setIsLoading(false);
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4">
@@ -97,17 +93,17 @@ const Login: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Email
+              Username
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 className="w-full pl-10 pr-4 py-2 text-sm bg-background/50 border border-border rounded-lg focus:outline-none focus:border-primary transition-colors"
-                placeholder="admin@example.com"
+                placeholder="Username"
               />
             </div>
           </div>
