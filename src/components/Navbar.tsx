@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Shield, User } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { data, isAdmin } = usePortfolio();
+  const { portfolio } = usePortfolio();
+  const { isAdmin } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -21,6 +23,7 @@ const Navbar: React.FC = () => {
     { name: 'Home', href: '#home' },
     { name: 'About', href: '#about' },
     { name: 'Skills', href: '#skills' },
+    { name: 'Projects', href: '#projects' },
     { name: 'Services', href: '#services' },
     { name: 'Contact', href: '#contact' },
   ];
@@ -47,9 +50,9 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            {data.logoImage ? (
+            {portfolio?.logo_image ? (
               <img 
-                src={data.logoImage} 
+                src={portfolio.logo_image} 
                 alt="Logo" 
                 className="w-8 h-8 object-contain"
               />

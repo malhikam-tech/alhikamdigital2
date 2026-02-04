@@ -3,8 +3,10 @@ import { Heart, Shield } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 
 const Footer: React.FC = () => {
-  const { data } = usePortfolio();
+  const { portfolio } = usePortfolio();
   const currentYear = new Date().getFullYear();
+
+  if (!portfolio) return null;
 
   return (
     <footer className="py-8 border-t border-border/30">
@@ -12,8 +14,8 @@ const Footer: React.FC = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            {data.logoImage ? (
-              <img src={data.logoImage} alt="Logo" className="w-6 h-6 object-contain" />
+            {portfolio.logo_image ? (
+              <img src={portfolio.logo_image} alt="Logo" className="w-6 h-6 object-contain" />
             ) : (
               <div className="w-6 h-6 rounded bg-primary/20 border border-primary/50 flex items-center justify-center">
                 <Shield className="w-3 h-3 text-primary" />
@@ -26,7 +28,7 @@ const Footer: React.FC = () => {
 
           {/* Copyright */}
           <p className="text-xs text-muted-foreground flex items-center gap-1">
-            © {currentYear} {data.name}. Made with <Heart className="w-3 h-3 text-destructive" /> in Indonesia
+            © {currentYear} {portfolio.name}. Made with <Heart className="w-3 h-3 text-destructive" /> in Indonesia
           </p>
 
           {/* Quick Links */}

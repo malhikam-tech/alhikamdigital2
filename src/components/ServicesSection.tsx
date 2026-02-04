@@ -3,7 +3,7 @@ import { Check, MessageCircle, Star } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 
 const ServicesSection: React.FC = () => {
-  const { data } = usePortfolio();
+  const { portfolio, packages } = usePortfolio();
   const [isVisible, setIsVisible] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -37,9 +37,11 @@ const ServicesSection: React.FC = () => {
     const message = encodeURIComponent(
       `Halo, saya tertarik untuk memesan paket ${packageName} untuk pembuatan website. Bisa tolong jelaskan lebih lanjut?`
     );
-    const waNumber = data.whatsappNumber.replace(/[^0-9]/g, '');
+    const waNumber = (portfolio?.whatsapp || '').replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
   };
+
+  if (!packages || packages.length === 0) return null;
 
   return (
     <section
@@ -72,7 +74,7 @@ const ServicesSection: React.FC = () => {
 
         {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {data.packages.map((pkg, index) => (
+          {packages.map((pkg, index) => (
             <div
               key={pkg.id}
               onMouseEnter={() => setSelectedPackage(pkg.id)}
@@ -80,14 +82,14 @@ const ServicesSection: React.FC = () => {
               className={`glass-card rounded-xl overflow-hidden transition-all duration-500 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               } ${
-                pkg.id === 'combo' ? 'md:-mt-4 md:mb-4 border-primary/50' : ''
+                index === 1 ? 'md:-mt-4 md:mb-4 border-primary/50' : ''
               } ${
                 selectedPackage === pkg.id ? 'scale-105 border-primary/70' : ''
               }`}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
               {/* Popular badge */}
-              {pkg.id === 'combo' && (
+              {index === 1 && (
                 <div className="bg-primary text-primary-foreground text-xs font-medium py-1 text-center flex items-center justify-center gap-1">
                   <Star className="w-3 h-3" />
                   Paling Populer
@@ -104,16 +106,16 @@ const ServicesSection: React.FC = () => {
                 <div className="mb-4">
                   <span className="text-xs text-muted-foreground">Mulai dari</span>
                   <div className="text-xl font-heading font-bold text-primary">
-                    {formatPrice(pkg.priceMin)}
+                    {formatPrice(pkg.price_min)}
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    s/d {formatPrice(pkg.priceMax)}
+                    s/d {formatPrice(pkg.price_max)}
                   </span>
                 </div>
 
                 {/* Features */}
                 <ul className="space-y-2 mb-6">
-                  {pkg.features.map((feature) => (
+                  {pkg.features?.map((feature) => (
                     <li key={feature} className="flex items-start gap-2 text-xs text-muted-foreground">
                       <Check className="w-3 h-3 text-accent mt-0.5 flex-shrink-0" />
                       <span>{feature}</span>
@@ -125,7 +127,7 @@ const ServicesSection: React.FC = () => {
                 <button
                   onClick={() => handleOrder(pkg.name)}
                   className={`w-full py-2 rounded-lg text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                    pkg.id === 'combo'
+                    index === 1
                       ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                       : 'btn-neon'
                   }`}
@@ -144,12 +146,12 @@ const ServicesSection: React.FC = () => {
             Atau hubungi langsung via WhatsApp:
           </p>
           <a
-            href={`https://wa.me/${data.whatsappNumber.replace(/[^0-9]/g, '')}`}
+            href={`https://wa.me/${(portfolio?.whatsapp || '').replace(/[^0-9]/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm font-medium text-primary hover:underline"
           >
-            {data.whatsappNumber}
+            {portfolio?.whatsapp}
           </a>
         </div>
       </div>

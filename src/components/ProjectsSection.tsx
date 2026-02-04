@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import { ExternalLink, Github, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
+import { type Project } from '@/hooks/usePortfolioData';
 
 const ProjectsSection: React.FC = () => {
-  const { data } = usePortfolio();
-  const [selectedProject, setSelectedProject] = useState<typeof data.projects[0] | null>(null);
+  const { projects } = usePortfolio();
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  if (!projects || projects.length === 0) return null;
 
   return (
     <section id="projects" className="py-20 px-4">
@@ -20,7 +23,7 @@ const ProjectsSection: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data.projects.map((project, index) => (
+          {projects.map((project, index) => (
             <div
               key={project.id}
               className="glass-card group cursor-pointer overflow-hidden hover:border-primary/50 transition-all duration-300"
@@ -61,7 +64,7 @@ const ProjectsSection: React.FC = () => {
 
                 {/* Tech Stack */}
                 <div className="flex flex-wrap gap-1.5">
-                  {project.technologies.slice(0, 3).map((tech) => (
+                  {project.technologies?.slice(0, 3).map((tech) => (
                     <span
                       key={tech}
                       className="px-2 py-0.5 text-[10px] bg-secondary text-secondary-foreground rounded"
@@ -69,9 +72,9 @@ const ProjectsSection: React.FC = () => {
                       {tech}
                     </span>
                   ))}
-                  {project.technologies.length > 3 && (
+                  {(project.technologies?.length || 0) > 3 && (
                     <span className="px-2 py-0.5 text-[10px] bg-secondary text-muted-foreground rounded">
-                      +{project.technologies.length - 3}
+                      +{(project.technologies?.length || 0) - 3}
                     </span>
                   )}
                 </div>
@@ -123,7 +126,7 @@ const ProjectsSection: React.FC = () => {
                   <div className="mb-4">
                     <h4 className="text-xs font-semibold text-foreground mb-2">Teknologi:</h4>
                     <div className="flex flex-wrap gap-2">
-                      {selectedProject.technologies.map((tech) => (
+                      {selectedProject.technologies?.map((tech) => (
                         <span
                           key={tech}
                           className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded"
@@ -136,9 +139,9 @@ const ProjectsSection: React.FC = () => {
 
                   {/* Links */}
                   <div className="flex gap-3">
-                    {selectedProject.liveUrl && (
+                    {selectedProject.live_url && (
                       <a
-                        href={selectedProject.liveUrl}
+                        href={selectedProject.live_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 text-xs btn-neon rounded-lg"
@@ -147,9 +150,9 @@ const ProjectsSection: React.FC = () => {
                         Live Demo
                       </a>
                     )}
-                    {selectedProject.githubUrl && (
+                    {selectedProject.github_url && (
                       <a
-                        href={selectedProject.githubUrl}
+                        href={selectedProject.github_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 text-xs bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"

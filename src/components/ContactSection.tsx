@@ -4,7 +4,7 @@ import { usePortfolio } from '@/contexts/PortfolioContext';
 import { useToast } from '@/hooks/use-toast';
 
 const ContactSection: React.FC = () => {
-  const { data } = usePortfolio();
+  const { portfolio } = usePortfolio();
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(false);
   const [formData, setFormData] = useState({
@@ -37,7 +37,7 @@ const ContactSection: React.FC = () => {
     const message = encodeURIComponent(
       `Halo, nama saya ${formData.name}.\n\nEmail: ${formData.email}\n\nPesan:\n${formData.message}`
     );
-    const waNumber = data.whatsappNumber.replace(/[^0-9]/g, '');
+    const waNumber = (portfolio?.whatsapp || '').replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
     
     toast({
@@ -47,6 +47,8 @@ const ContactSection: React.FC = () => {
     
     setFormData({ name: '', email: '', message: '' });
   };
+
+  if (!portfolio) return null;
 
   return (
     <section
@@ -87,17 +89,17 @@ const ContactSection: React.FC = () => {
               <div>
                 <p className="text-xs text-muted-foreground">WhatsApp</p>
                 <a 
-                  href={`https://wa.me/${data.whatsappNumber.replace(/[^0-9]/g, '')}`}
+                  href={`https://wa.me/${(portfolio.whatsapp || '').replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm font-medium text-foreground hover:text-primary transition-colors"
                 >
-                  {data.whatsappNumber}
+                  {portfolio.whatsapp}
                 </a>
               </div>
             </div>
 
-            {data.socialLinks.email && (
+            {portfolio.email && (
               <div className="glass-card p-4 rounded-xl flex items-center gap-4 group hover:border-primary/50 transition-all">
                 <div className="p-2 rounded-lg bg-accent/10 border border-accent/30">
                   <Mail className="w-4 h-4 text-accent" />
@@ -105,10 +107,10 @@ const ContactSection: React.FC = () => {
                 <div>
                   <p className="text-xs text-muted-foreground">Email</p>
                   <a 
-                    href={`mailto:${data.socialLinks.email}`}
+                    href={`mailto:${portfolio.email}`}
                     className="text-sm font-medium text-foreground hover:text-primary transition-colors"
                   >
-                    {data.socialLinks.email}
+                    {portfolio.email}
                   </a>
                 </div>
               </div>
@@ -120,7 +122,7 @@ const ContactSection: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Location</p>
-                <p className="text-sm font-medium text-foreground">Indonesia</p>
+                <p className="text-sm font-medium text-foreground">{portfolio.location || 'Indonesia'}</p>
               </div>
             </div>
           </div>

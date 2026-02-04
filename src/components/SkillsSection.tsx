@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Code, Shield } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
+import { type Skill } from '@/hooks/usePortfolioData';
 
 const SkillsSection: React.FC = () => {
-  const { data } = usePortfolio();
+  const { skills } = usePortfolio();
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -24,10 +25,12 @@ const SkillsSection: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  const webDevSkills = data.skills.filter(s => s.category === 'webdev');
-  const securitySkills = data.skills.filter(s => s.category === 'security');
+  // Split skills - assuming first half is webdev, second half is security
+  const midpoint = Math.ceil((skills?.length || 0) / 2);
+  const webDevSkills = skills?.slice(0, midpoint) || [];
+  const securitySkills = skills?.slice(midpoint) || [];
 
-  const SkillBar = ({ skill, delay }: { skill: typeof data.skills[0]; delay: number }) => (
+  const SkillBar = ({ skill, delay }: { skill: Skill; delay: number }) => (
     <div
       className={`transition-all duration-700 ${
         isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
@@ -49,6 +52,8 @@ const SkillsSection: React.FC = () => {
       </div>
     </div>
   );
+
+  if (!skills || skills.length === 0) return null;
 
   return (
     <section
@@ -93,7 +98,7 @@ const SkillsSection: React.FC = () => {
             </div>
             <div className="space-y-4">
               {webDevSkills.map((skill, index) => (
-                <SkillBar key={skill.name} skill={skill} delay={index * 100} />
+                <SkillBar key={skill.id} skill={skill} delay={index * 100} />
               ))}
             </div>
           </div>
@@ -115,7 +120,7 @@ const SkillsSection: React.FC = () => {
             </div>
             <div className="space-y-4">
               {securitySkills.map((skill, index) => (
-                <SkillBar key={skill.name} skill={skill} delay={(index + webDevSkills.length) * 100} />
+                <SkillBar key={skill.id} skill={skill} delay={(index + webDevSkills.length) * 100} />
               ))}
             </div>
           </div>

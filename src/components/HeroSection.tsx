@@ -3,11 +3,13 @@ import { ChevronDown, Github, Instagram, Mail } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 
 const HeroSection: React.FC = () => {
-  const { data } = usePortfolio();
+  const { portfolio } = usePortfolio();
 
   const scrollToAbout = () => {
     document.querySelector('#about')?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  if (!portfolio) return null;
 
   return (
     <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden pt-16">
@@ -34,16 +36,16 @@ const HeroSection: React.FC = () => {
           {/* Profile Image */}
           <div className="relative animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 rounded-full overflow-hidden border-2 border-primary/30 neon-border animate-float">
-              {data.profileImage ? (
+              {portfolio.profile_image ? (
                 <img 
-                  src={data.profileImage} 
-                  alt={data.name}
+                  src={portfolio.profile_image} 
+                  alt={portfolio.name}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                   <span className="text-4xl sm:text-5xl font-heading font-bold text-primary">
-                    {data.name.charAt(0)}
+                    {portfolio.name.charAt(0)}
                   </span>
                 </div>
               )}
@@ -65,19 +67,19 @@ const HeroSection: React.FC = () => {
               className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold mb-3 animate-fade-in"
               style={{ animationDelay: '0.4s' }}
             >
-              I'm <span className="gradient-text">{data.name}</span>
+              I'm <span className="gradient-text">{portfolio.name}</span>
             </h1>
             <p 
               className="text-sm sm:text-base text-muted-foreground mb-4 animate-fade-in"
               style={{ animationDelay: '0.5s' }}
             >
-              {data.tagline}
+              {portfolio.tagline}
             </p>
             <p 
               className="text-xs text-muted-foreground/70 mb-6 animate-fade-in"
               style={{ animationDelay: '0.6s' }}
             >
-              {data.age} tahun • {data.grade}
+              {portfolio.age} tahun • {portfolio.grade}
             </p>
 
             {/* Social Links */}
@@ -85,9 +87,9 @@ const HeroSection: React.FC = () => {
               className="flex items-center justify-center lg:justify-start gap-3 mb-6 animate-fade-in"
               style={{ animationDelay: '0.7s' }}
             >
-              {data.socialLinks.github && (
+              {portfolio.github && (
                 <a
-                  href={data.socialLinks.github}
+                  href={portfolio.github}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 glass-card hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 group"
@@ -95,9 +97,9 @@ const HeroSection: React.FC = () => {
                   <Github className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </a>
               )}
-              {data.socialLinks.instagram && (
+              {portfolio.instagram && (
                 <a
-                  href={data.socialLinks.instagram}
+                  href={portfolio.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 glass-card hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 group"
@@ -105,9 +107,9 @@ const HeroSection: React.FC = () => {
                   <Instagram className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </a>
               )}
-              {data.socialLinks.email && (
+              {portfolio.email && (
                 <a
-                  href={`mailto:${data.socialLinks.email}`}
+                  href={`mailto:${portfolio.email}`}
                   className="p-2 glass-card hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 group"
                 >
                   <Mail className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
