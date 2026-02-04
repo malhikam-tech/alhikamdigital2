@@ -3,7 +3,7 @@ import { Code2, Shield, Sparkles } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 
 const AboutSection: React.FC = () => {
-  const { data } = usePortfolio();
+  const { portfolio } = usePortfolio();
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -42,6 +42,8 @@ const AboutSection: React.FC = () => {
     },
   ];
 
+  if (!portfolio) return null;
+
   return (
     <section
       id="about"
@@ -70,17 +72,17 @@ const AboutSection: React.FC = () => {
           >
             <div className="glass-card p-6 rounded-xl">
               <h3 className="text-lg font-heading font-semibold mb-3 text-foreground">
-                Halo! Saya <span className="text-primary">{data.name}</span>
+                Halo! Saya <span className="text-primary">{portfolio.name}</span>
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                {data.bio}
+                {portfolio.bio}
               </p>
               <div className="flex flex-wrap gap-2">
                 <span className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/30">
-                  {data.age} Tahun
+                  {portfolio.age} Tahun
                 </span>
                 <span className="px-3 py-1 text-xs rounded-full bg-accent/10 text-accent border border-accent/30">
-                  {data.grade}
+                  {portfolio.grade}
                 </span>
                 <span className="px-3 py-1 text-xs rounded-full bg-neon-purple/10 text-neon-purple border border-neon-purple/30">
                   Self-taught

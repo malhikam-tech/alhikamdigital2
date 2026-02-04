@@ -8,8 +8,11 @@ import ProjectsSection from '@/components/ProjectsSection';
 import ServicesSection from '@/components/ServicesSection';
 import ContactSection from '@/components/ContactSection';
 import Footer from '@/components/Footer';
+import { usePortfolio } from '@/contexts/PortfolioContext';
+import { Loader2 } from 'lucide-react';
 
 const Index: React.FC = () => {
+  const { isLoading } = usePortfolio();
   const [showIntro, setShowIntro] = useState(() => {
     return !sessionStorage.getItem('introShown');
   });
@@ -18,6 +21,14 @@ const Index: React.FC = () => {
     setShowIntro(false);
     sessionStorage.setItem('introShown', 'true');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <>

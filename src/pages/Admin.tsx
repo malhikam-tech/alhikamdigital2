@@ -1,78 +1,179 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePortfolio } from '@/contexts/PortfolioContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { 
   LogOut, Save, User, Image, Code, Shield, 
-  Link as LinkIcon, Package, MessageCircle, Upload, X 
+  Link as LinkIcon, Package, MessageCircle, Briefcase, Plus, Trash2, Loader2
 } from 'lucide-react';
+import {
+  usePortfolioQuery,
+  useSkillsQuery,
+  usePackagesQuery,
+  useProjectsQuery,
+  useUpdatePortfolio,
+  useUpdateSkills,
+  useUpdatePackages,
+  useUpdateProjects,
+  useDeleteProject,
+  useCreateProject,
+  type PortfolioData,
+  type Skill,
+  type Package as PackageType,
+  type Project,
+} from '@/hooks/usePortfolioData';
 
 const Admin: React.FC = () => {
-  const { data, updateData, isAdmin, logout } = usePortfolio();
+  const { isAdmin, loading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const profileInputRef = useRef<HTMLInputElement>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  
+  const { data: portfolio, isLoading: portfolioLoading } = usePortfolioQuery();
+  const { data: skills, isLoading: skillsLoading } = useSkillsQuery();
+  const { data: packages, isLoading: packagesLoading } = usePackagesQuery();
+  const { data: projects, isLoading: projectsLoading } = useProjectsQuery();
+  
+  const updatePortfolio = useUpdatePortfolio();
+  const updateSkills = useUpdateSkills();
+  const updatePackages = useUpdatePackages();
+  const updateProjects = useUpdateProjects();
+  const deleteProject = useDeleteProject();
+  const createProject = useCreateProject();
   
   const [activeTab, setActiveTab] = useState('profile');
-  const [formData, setFormData] = useState(data);
+  const [formData, setFormData] = useState<Partial<PortfolioData>>({});
+  const [skillsForm, setSkillsForm] = useState<Skill[]>([]);
+  const [packagesForm, setPackagesForm] = useState<PackageType[]>([]);
+  const [projectsForm, setProjectsForm] = useState<Project[]>([]);
+  const [newProject, setNewProject] = useState({
+    title: '',
+    description: '',
+    image: '',
+    category: 'Web Development',
+    technologies: [] as string[],
+    live_url: '',
+    github_url: '',
+  });
 
   // Redirect if not admin
-  React.useEffect(() => {
-    if (!isAdmin) {
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
       navigate('/login');
     }
-  }, [isAdmin, navigate]);
+  }, [isAdmin, authLoading, navigate]);
 
-  const handleImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>, 
-    type: 'profileImage' | 'logoImage'
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          [type]: reader.result as string
-        }));
-      };
-      reader.readAsDataURL(file);
+  // Set form data when data loads
+  useEffect(() => {
+    if (portfolio) setFormData(portfolio);
+  }, [portfolio]);
+
+  useEffect(() => {
+    if (skills) setSkillsForm(skills);
+  }, [skills]);
+
+  useEffect(() => {
+    if (packages) setPackagesForm(packages);
+  }, [packages]);
+
+  useEffect(() => {
+    if (projects) setProjectsForm(projects);
+  }, [projects]);
+
+  const handleSaveProfile = () => {
+    if (portfolio && formData) {
+      updatePortfolio.mutate({ ...formData, id: portfolio.id } as PortfolioData & { id: string });
     }
   };
 
-  const handleSave = () => {
-    updateData(formData);
-    toast({
-      title: "Berhasil disimpan!",
-      description: "Perubahan telah diterapkan",
+  const handleSaveSkills = () => {
+    updateSkills.mutate(skillsForm);
+  };
+
+  const handleSavePackages = () => {
+    updatePackages.mutate(packagesForm);
+  };
+
+  const handleSaveProjects = () => {
+    updateProjects.mutate(projectsForm);
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    if (confirm('Yakin ingin menghapus project ini?')) {
+      deleteProject.mutate(projectId);
+    }
+  };
+
+  const handleAddProject = () => {
+    if (!newProject.title) {
+      toast({
+        title: "Error",
+        description: "Judul project harus diisi",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    createProject.mutate({
+      ...newProject,
+      portfolio_id: portfolio?.id || null,
+      sort_order: projectsForm.length,
+    });
+    
+    setNewProject({
+      title: '',
+      description: '',
+      image: '',
+      category: 'Web Development',
+      technologies: [],
+      live_url: '',
+      github_url: '',
     });
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
-  const updateSkill = (index: number, field: 'name' | 'percentage', value: string | number) => {
-    const newSkills = [...formData.skills];
+  const updateSkillForm = (index: number, field: keyof Skill, value: string | number) => {
+    const newSkills = [...skillsForm];
     newSkills[index] = { ...newSkills[index], [field]: value };
-    setFormData(prev => ({ ...prev, skills: newSkills }));
+    setSkillsForm(newSkills);
   };
 
-  const updatePackage = (index: number, field: string, value: string | number | string[]) => {
-    const newPackages = [...formData.packages];
+  const updatePackageForm = (index: number, field: keyof PackageType, value: string | number | string[] | null) => {
+    const newPackages = [...packagesForm];
     newPackages[index] = { ...newPackages[index], [field]: value };
-    setFormData(prev => ({ ...prev, packages: newPackages }));
+    setPackagesForm(newPackages);
+  };
+
+  const updateProjectForm = (index: number, field: keyof Project, value: string | string[] | null) => {
+    const newProjects = [...projectsForm];
+    newProjects[index] = { ...newProjects[index], [field]: value };
+    setProjectsForm(newProjects);
   };
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'images', label: 'Images', icon: Image },
     { id: 'skills', label: 'Skills', icon: Code },
     { id: 'packages', label: 'Packages', icon: Package },
+    { id: 'projects', label: 'Projects', icon: Briefcase },
     { id: 'social', label: 'Social', icon: LinkIcon },
   ];
+
+  const isLoading = authLoading || portfolioLoading || skillsLoading || packagesLoading || projectsLoading;
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!isAdmin) return null;
 
@@ -84,333 +185,433 @@ const Admin: React.FC = () => {
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
             <h1 className="text-sm font-heading font-bold text-foreground">Admin Panel</h1>
+            <span className="text-xs text-muted-foreground">(Supabase)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Save className="w-3 h-3" />
-              Save
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg text-xs font-medium hover:bg-destructive/20 transition-colors"
-            >
-              <LogOut className="w-3 h-3" />
-              Logout
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg text-xs font-medium hover:bg-destructive/20 transition-colors"
+          >
+            <LogOut className="w-3 h-3" />
+            Logout
+          </button>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-[200px_1fr] gap-6">
-          {/* Sidebar */}
-          <aside className="glass-card rounded-xl p-4 h-fit lg:sticky lg:top-20">
-            <nav className="space-y-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-primary/10 text-primary border border-primary/30'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </aside>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="container mx-auto px-4 py-6">
+          <div className="grid lg:grid-cols-[200px_1fr] gap-6">
+            {/* Sidebar */}
+            <aside className="glass-card rounded-xl p-4 h-fit lg:sticky lg:top-20">
+              <nav className="space-y-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-primary/10 text-primary border border-primary/30'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </aside>
 
-          {/* Content */}
-          <main className="glass-card rounded-xl p-6">
-            {/* Profile Tab */}
-            {activeTab === 'profile' && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-heading font-semibold text-foreground">Profile</h2>
-                
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">Nama</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
-                    />
+            {/* Content */}
+            <main className="glass-card rounded-xl p-6">
+              {/* Profile Tab */}
+              {activeTab === 'profile' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-heading font-semibold text-foreground">Profile</h2>
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={updatePortfolio.isPending}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {updatePortfolio.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Simpan
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">Tagline</label>
-                    <input
-                      type="text"
-                      value={formData.tagline}
-                      onChange={(e) => setFormData(prev => ({ ...prev, tagline: e.target.value }))}
-                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">Umur</label>
-                    <input
-                      type="number"
-                      value={formData.age}
-                      onChange={(e) => setFormData(prev => ({ ...prev, age: parseInt(e.target.value) || 0 }))}
-                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">Kelas</label>
-                    <input
-                      type="text"
-                      value={formData.grade}
-                      onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Bio</label>
-                  <textarea
-                    value={formData.bio}
-                    onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                    rows={4}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary resize-none"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Images Tab */}
-            {activeTab === 'images' && (
-              <div className="space-y-6">
-                <h2 className="text-lg font-heading font-semibold text-foreground">Images</h2>
-                
-                {/* Profile Image */}
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-2">Foto Profile</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted">
-                      {formData.profileImage ? (
-                        <img src={formData.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                          <User className="w-8 h-8" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <input
-                        ref={profileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload(e, 'profileImage')}
-                        className="hidden"
-                      />
-                      <button
-                        onClick={() => profileInputRef.current?.click()}
-                        className="flex items-center gap-1 px-3 py-1.5 btn-neon rounded-lg text-xs"
-                      >
-                        <Upload className="w-3 h-3" />
-                        Upload
-                      </button>
-                      {formData.profileImage && (
-                        <button
-                          onClick={() => setFormData(prev => ({ ...prev, profileImage: '' }))}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg text-xs"
-                        >
-                          <X className="w-3 h-3" />
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Logo Image */}
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-2">Logo</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
-                      {formData.logoImage ? (
-                        <img src={formData.logoImage} alt="Logo" className="w-full h-full object-contain p-2" />
-                      ) : (
-                        <Shield className="w-6 h-6 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <input
-                        ref={logoInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload(e, 'logoImage')}
-                        className="hidden"
-                      />
-                      <button
-                        onClick={() => logoInputRef.current?.click()}
-                        className="flex items-center gap-1 px-3 py-1.5 btn-neon rounded-lg text-xs"
-                      >
-                        <Upload className="w-3 h-3" />
-                        Upload
-                      </button>
-                      {formData.logoImage && (
-                        <button
-                          onClick={() => setFormData(prev => ({ ...prev, logoImage: '' }))}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg text-xs"
-                        >
-                          <X className="w-3 h-3" />
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Skills Tab */}
-            {activeTab === 'skills' && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-heading font-semibold text-foreground">Skills</h2>
-                
-                <div className="space-y-3">
-                  {formData.skills.map((skill, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_80px_80px] gap-2 items-center">
+                  
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Nama</label>
                       <input
                         type="text"
-                        value={skill.name}
-                        onChange={(e) => updateSkill(index, 'name', e.target.value)}
-                        className="px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                        value={formData.name || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Tagline</label>
+                      <input
+                        type="text"
+                        value={formData.tagline || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, tagline: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Umur</label>
                       <input
                         type="number"
-                        min="0"
-                        max="100"
-                        value={skill.percentage}
-                        onChange={(e) => updateSkill(index, 'percentage', parseInt(e.target.value) || 0)}
-                        className="px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                        value={formData.age || 0}
+                        onChange={(e) => setFormData(prev => ({ ...prev, age: parseInt(e.target.value) || 0 }))}
+                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                       />
-                      <span className={`text-xs px-2 py-1 rounded-full text-center ${
-                        skill.category === 'webdev' 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'bg-accent/10 text-accent'
-                      }`}>
-                        {skill.category}
-                      </span>
                     </div>
-                  ))}
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Kelas</label>
+                      <input
+                        type="text"
+                        value={formData.grade || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">Bio</label>
+                    <textarea
+                      value={formData.bio || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                      rows={4}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary resize-none"
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Packages Tab */}
-            {activeTab === 'packages' && (
-              <div className="space-y-6">
-                <h2 className="text-lg font-heading font-semibold text-foreground">Packages</h2>
-                
-                {formData.packages.map((pkg, index) => (
-                  <div key={pkg.id} className="p-4 border border-border rounded-lg space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">{pkg.name}</h3>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-muted-foreground mb-1">Harga Min (Rp)</label>
+              {/* Skills Tab */}
+              {activeTab === 'skills' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-heading font-semibold text-foreground">Skills</h2>
+                    <button
+                      onClick={handleSaveSkills}
+                      disabled={updateSkills.isPending}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {updateSkills.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Simpan
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {skillsForm.map((skill, index) => (
+                      <div key={skill.id} className="grid grid-cols-[1fr_80px] gap-2 items-center">
+                        <input
+                          type="text"
+                          value={skill.name}
+                          onChange={(e) => updateSkillForm(index, 'name', e.target.value)}
+                          className="px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                        />
                         <input
                           type="number"
-                          value={pkg.priceMin}
-                          onChange={(e) => updatePackage(index, 'priceMin', parseInt(e.target.value) || 0)}
+                          min="0"
+                          max="100"
+                          value={skill.percentage}
+                          onChange={(e) => updateSkillForm(index, 'percentage', parseInt(e.target.value) || 0)}
+                          className="px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Packages Tab */}
+              {activeTab === 'packages' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-heading font-semibold text-foreground">Packages</h2>
+                    <button
+                      onClick={handleSavePackages}
+                      disabled={updatePackages.isPending}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {updatePackages.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Simpan
+                    </button>
+                  </div>
+                  
+                  {packagesForm.map((pkg, index) => (
+                    <div key={pkg.id} className="p-4 border border-border rounded-lg space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground">{pkg.name}</h3>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Harga Min (Rp)</label>
+                          <input
+                            type="number"
+                            value={pkg.price_min}
+                            onChange={(e) => updatePackageForm(index, 'price_min', parseInt(e.target.value) || 0)}
+                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Harga Max (Rp)</label>
+                          <input
+                            type="number"
+                            value={pkg.price_max}
+                            onChange={(e) => updatePackageForm(index, 'price_max', parseInt(e.target.value) || 0)}
+                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Features (pisahkan dengan enter)</label>
+                        <textarea
+                          value={pkg.features?.join('\n') || ''}
+                          onChange={(e) => updatePackageForm(index, 'features', e.target.value.split('\n'))}
+                          rows={4}
+                          className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary resize-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="p-4 border border-border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MessageCircle className="w-4 h-4 text-primary" />
+                      <label className="text-sm font-medium text-foreground">WhatsApp Number</label>
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.whatsapp || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                      placeholder="+62 xxx xxxx xxxx"
+                    />
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={updatePortfolio.isPending}
+                      className="mt-2 flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {updatePortfolio.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Simpan WhatsApp
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Projects Tab */}
+              {activeTab === 'projects' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-heading font-semibold text-foreground">Projects</h2>
+                    <button
+                      onClick={handleSaveProjects}
+                      disabled={updateProjects.isPending}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {updateProjects.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Simpan Semua
+                    </button>
+                  </div>
+                  
+                  {/* Existing Projects */}
+                  <div className="space-y-4">
+                    {projectsForm.map((project, index) => (
+                      <div key={project.id} className="p-4 border border-border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-semibold text-foreground">{project.title}</h3>
+                          <button
+                            onClick={() => handleDeleteProject(project.id)}
+                            disabled={deleteProject.isPending}
+                            className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-muted-foreground mb-1">Judul</label>
+                            <input
+                              type="text"
+                              value={project.title}
+                              onChange={(e) => updateProjectForm(index, 'title', e.target.value)}
+                              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-muted-foreground mb-1">Category</label>
+                            <input
+                              type="text"
+                              value={project.category || ''}
+                              onChange={(e) => updateProjectForm(index, 'category', e.target.value)}
+                              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Deskripsi</label>
+                          <textarea
+                            value={project.description || ''}
+                            onChange={(e) => updateProjectForm(index, 'description', e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary resize-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Image URL</label>
+                          <input
+                            type="text"
+                            value={project.image || ''}
+                            onChange={(e) => updateProjectForm(index, 'image', e.target.value)}
+                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-muted-foreground mb-1">Live URL</label>
+                            <input
+                              type="text"
+                              value={project.live_url || ''}
+                              onChange={(e) => updateProjectForm(index, 'live_url', e.target.value)}
+                              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-muted-foreground mb-1">GitHub URL</label>
+                            <input
+                              type="text"
+                              value={project.github_url || ''}
+                              onChange={(e) => updateProjectForm(index, 'github_url', e.target.value)}
+                              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Technologies (pisahkan dengan koma)</label>
+                          <input
+                            type="text"
+                            value={project.technologies?.join(', ') || ''}
+                            onChange={(e) => updateProjectForm(index, 'technologies', e.target.value.split(',').map(t => t.trim()))}
+                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add New Project */}
+                  <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg space-y-3">
+                    <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Tambah Project Baru
+                    </h3>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Judul *</label>
+                        <input
+                          type="text"
+                          value={newProject.title}
+                          onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
                           className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-muted-foreground mb-1">Harga Max (Rp)</label>
+                        <label className="block text-xs text-muted-foreground mb-1">Category</label>
                         <input
-                          type="number"
-                          value={pkg.priceMax}
-                          onChange={(e) => updatePackage(index, 'priceMax', parseInt(e.target.value) || 0)}
+                          type="text"
+                          value={newProject.category}
+                          onChange={(e) => setNewProject(prev => ({ ...prev, category: e.target.value }))}
                           className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-muted-foreground mb-1">Features (pisahkan dengan enter)</label>
+                      <label className="block text-xs text-muted-foreground mb-1">Deskripsi</label>
                       <textarea
-                        value={pkg.features.join('\n')}
-                        onChange={(e) => updatePackage(index, 'features', e.target.value.split('\n'))}
-                        rows={4}
+                        value={newProject.description}
+                        onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
+                        rows={2}
                         className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary resize-none"
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1">Image URL</label>
+                      <input
+                        type="text"
+                        value={newProject.image}
+                        onChange={(e) => setNewProject(prev => ({ ...prev, image: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                        placeholder="https://images.unsplash.com/..."
+                      />
+                    </div>
+                    <button
+                      onClick={handleAddProject}
+                      disabled={createProject.isPending}
+                      className="flex items-center gap-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {createProject.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                      Tambah Project
+                    </button>
                   </div>
-                ))}
+                </div>
+              )}
 
-                <div className="p-4 border border-border rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MessageCircle className="w-4 h-4 text-primary" />
-                    <label className="text-sm font-medium text-foreground">WhatsApp Number</label>
+              {/* Social Tab */}
+              {activeTab === 'social' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-heading font-semibold text-foreground">Social Links</h2>
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={updatePortfolio.isPending}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {updatePortfolio.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Simpan
+                    </button>
                   </div>
-                  <input
-                    type="text"
-                    value={formData.whatsappNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
-                    placeholder="+62 xxx xxxx xxxx"
-                  />
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">GitHub URL</label>
+                    <input
+                      type="url"
+                      value={formData.github || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, github: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                      placeholder="https://github.com/username"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">Instagram URL</label>
+                    <input
+                      type="url"
+                      value={formData.instagram || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, instagram: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                      placeholder="https://instagram.com/username"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={formData.email || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                      placeholder="email@example.com"
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Social Tab */}
-            {activeTab === 'social' && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-heading font-semibold text-foreground">Social Links</h2>
-                
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">GitHub URL</label>
-                  <input
-                    type="url"
-                    value={formData.socialLinks.github || ''}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      socialLinks: { ...prev.socialLinks, github: e.target.value } 
-                    }))}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
-                    placeholder="https://github.com/username"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Instagram URL</label>
-                  <input
-                    type="url"
-                    value={formData.socialLinks.instagram || ''}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      socialLinks: { ...prev.socialLinks, instagram: e.target.value } 
-                    }))}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
-                    placeholder="https://instagram.com/username"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.socialLinks.email || ''}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      socialLinks: { ...prev.socialLinks, email: e.target.value } 
-                    }))}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
-                    placeholder="email@example.com"
-                  />
-                </div>
-              </div>
-            )}
-          </main>
+              )}
+            </main>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
